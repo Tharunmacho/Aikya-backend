@@ -39,6 +39,7 @@ async function uploadImageToS3(filePath, key) {
       Key: key,
       Body: fileContent,
       ContentType: 'image/jpeg',
+      ACL: 'public-read', // Make images publicly accessible
     });
 
     await s3Client.send(command);
