@@ -22,8 +22,11 @@ dotenv.config();
 // Initialize Express app
 const app = express();
 
-// Connect to MongoDB
-connectDB();
+// Connect to MongoDB (only if not in serverless)
+// In serverless, connection is established on first request
+if (process.env.VERCEL !== '1') {
+  connectDB();
+}
 
 // Trust proxy - for rate limiting behind reverse proxies
 app.set('trust proxy', 1);
