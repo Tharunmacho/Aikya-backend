@@ -11,11 +11,11 @@ const projectItemSchema = new mongoose.Schema({
   description: String,
   category: {
     type: String,
-    enum: ['residential', 'commercial', 'infrastructure'],
+    enum: ['residential', 'commercial', 'plots'],
   },
   type: {
     type: String,
-    enum: ['apartment', 'villa', 'office', 'plots', 'retail'],
+    enum: ['apartment', 'villa', 'independent house', 'commercial space', 'plots'],
   },
   status: {
     type: String,

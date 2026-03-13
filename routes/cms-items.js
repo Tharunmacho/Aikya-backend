@@ -26,6 +26,7 @@ import {
   CareerItem,
 } from '../models/CMSItems.js';
 import User from '../models/User.js';
+import Auth from '../models/Auth.js';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import { updateItemWithImageCleanup, deleteItemWithImageCleanup } from '../utils/imageCleanup.js';
@@ -46,8 +47,9 @@ const verifyAdmin = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id);
+    const authRecord = user ? await Auth.findOne({ email: user.email }).select('isAdmin') : null;
     
-    if (!user || !user.isAdmin) {
+    if (!user || !(authRecord?.isAdmin || user.isAdmin)) {
       return res.status(403).json({ 
         success: false, 
         message: 'Access denied. Admin privileges required.' 

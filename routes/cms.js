@@ -18,6 +18,7 @@ import {
   Footer
 } from '../models/Content.js';
 import User from '../models/User.js';
+import Auth from '../models/Auth.js';
 import jwt from 'jsonwebtoken';
 
 const router = express.Router();
@@ -44,8 +45,10 @@ const verifyAdmin = async (req, res, next) => {
       });
     }
 
+    const authRecord = await Auth.findOne({ email: user.email }).select('isAdmin');
+
     // Check if user is admin
-    if (!user.isAdmin) {
+    if (!(authRecord?.isAdmin || user.isAdmin)) {
       return res.status(403).json({ 
         success: false, 
         message: 'Access denied. Admin privileges required.' 

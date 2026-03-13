@@ -5,6 +5,15 @@ import jwt from 'jsonwebtoken';
 
 const router = express.Router();
 
+const resolveAdminAccess = async (user) => {
+  if (!user?.email) {
+    return false;
+  }
+
+  const authRecord = await Auth.findOne({ email: user.email }).select('isAdmin');
+  return Boolean(authRecord?.isAdmin || user.isAdmin);
+};
+
 // Generate JWT Token
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -55,10 +64,12 @@ router.post('/signup', async (req, res) => {
     await Auth.create({
       email,
       password,
+      isAdmin: false,
     });
     console.log('✅ Auth record created');
 
     if (user) {
+      const isAdmin = await resolveAdminAccess(user);
       console.log('✅ Signup successful, sending response');
       res.status(201).json({
         success: true,
@@ -67,7 +78,7 @@ router.post('/signup', async (req, res) => {
           _id: user._id,
           fullName: user.fullName,
           email: user.email,
-          isAdmin: user.isAdmin || false,
+          isAdmin,
           token: generateToken(user._id),
         },
       });
@@ -126,6 +137,15 @@ router.post('/login', async (req, res) => {
     // Get full user data from users collection
     const user = await User.findOne({ email });
 
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User profile not found'
+      });
+    }
+
+    const isAdmin = await resolveAdminAccess(user);
+
     res.json({
       success: true,
       message: 'Login successful',
@@ -133,7 +153,7 @@ router.post('/login', async (req, res) => {
         _id: user._id,
         fullName: user.fullName,
         email: user.email,
-        isAdmin: user.isAdmin || false,
+        isAdmin,
         token: generateToken(user._id),
       },
     });
@@ -164,6 +184,50 @@ router.get('/users', async (req, res) => {
       success: false,
       message: 'Server error fetching users',
       error: error.message 
+    });
+  }
+});
+
+// @route   GET /api/auth/me
+// @desc    Get current user with admin access resolved from auth collection
+// @access  Private
+router.get('/me', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'No authentication token provided'
+      });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const isAdmin = await resolveAdminAccess(user);
+
+    res.json({
+      success: true,
+      data: {
+        _id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        isAdmin,
+      },
+    });
+  } catch (error) {
+    res.status(401).json({
+      success: false,
+      message: 'Invalid or expired token',
+      error: error.message,
     });
   }
 });
