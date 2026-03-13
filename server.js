@@ -66,11 +66,37 @@ app.use('/api/', limiter);
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/signup', authLimiter);
 
+const parseAllowedOrigins = () => {
+  const configuredOrigins = [
+    process.env.FRONTEND_URL,
+    ...(process.env.FRONTEND_URLS || '').split(',').map((origin) => origin.trim()),
+  ].filter(Boolean);
+
+  const defaultProductionOrigins = [
+    'https://aikyabuilders.welocalhost.com',
+    'https://www.aikyabuilders.welocalhost.com',
+    'https://aikiyabuilders.welocalhost.com',
+    'https://www.aikiyabuilders.welocalhost.com',
+  ];
+
+  return process.env.NODE_ENV === 'production'
+    ? [...new Set([...configuredOrigins, ...defaultProductionOrigins])]
+    : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:8080', 'http://localhost:8081', 'http://localhost:8082'];
+};
+
+const allowedOrigins = parseAllowedOrigins();
+
 // CORS Configuration
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL 
-    : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:8080', 'http://localhost:8081', 'http://localhost:8082'],
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
   credentials: true,
 }));
 
