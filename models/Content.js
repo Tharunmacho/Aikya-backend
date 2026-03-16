@@ -392,6 +392,10 @@ const partnershipSchema = new mongoose.Schema({
 
 // Footer Section Schema
 const footerSchema = new mongoose.Schema({
+  logo: {
+    type: String,
+    default: '',
+  },
   companyName: {
     type: String,
     default: 'Aikya Builders and Promoters',
